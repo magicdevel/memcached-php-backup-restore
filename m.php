@@ -72,6 +72,7 @@ class memcachedTools
     public function writeKeysToMemcached()
     {
         $data = file_get_contents($this->filename);
+        $data=trim($data,"\n");//去掉结尾的多余的空行
         $allData = explode("\n", $data);
         foreach ($allData as $key) {
             $keyData = unserialize($key);
@@ -80,6 +81,7 @@ class memcachedTools
             }
             $this->memcached->set($keyData['key'], base64_decode($keyData['val']), 0, $keyData['age']);
         }
+        return 1;//总是返回成功标识
     }
 
     public function getAllKeys()
@@ -117,7 +119,7 @@ class memcachedTools
 
 $host = '127.0.0.1';
 $port = '11211';
-$allowedArgs = array('-h' => 'host', '-p' => 'port', '-op' => 'action', '-f' => 'file');
+$allowedArgs = array('-h' => 'host', '-p' => 'port', '-op' => 'action', '-f' => 'filename');
 foreach ($allowedArgs as $key => $val) {
     $id = array_search($key, $argv);
     if ($id) {
@@ -139,6 +141,17 @@ switch ($action) {
         echo "Memcached Data has been saved to file :" . $obj->filename;
         break;
     case 'restore':
+    	$curDate=date('Y-m-d H:i:s');
+	//恢复备份文件锁
+	if(file_exists($obj->filename.'.lock')){
+		$str="\n===已经恢复过 ，重新恢复请删除lock文件 !===\n";
+		$str.="===".file_get_contents($obj->filename.'.lock')."===\n\n";	
+		echo $str;
+		exit;
+	}else{
+		echo "\n===正在恢复ing memached at:{$curDate} ===\n";
+		file_put_contents($obj->filename.'.lock',"restore @{$curDate}");
+	}
         $retval = $obj->writeKeysToMemcached();
         if(!$retval) {
             echo "Memcached Data could not be restored: " . $obj->filename . " Not Found\r\n";
