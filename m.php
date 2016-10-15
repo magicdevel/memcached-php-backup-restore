@@ -61,7 +61,7 @@ class memcachedTools
             $data = serialize(
                 array(
                     'key' => $row['key'],
-                    'age' => ($row['age'] - $time),
+                    'age' => $row['age'],
                     'val' => base64_encode($value)
                 )
             );
